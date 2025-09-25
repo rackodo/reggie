@@ -38,7 +38,7 @@ class Reggie:
 					sys.stdout.write("\n")
 			sys.stdout.write("-" * self.width)
 
-			statusLeft = f"<{os.getlogin()}> {self.msg}"
+			statusLeft = f"<{os.getlogin()}> {self.msg}_"
 			statusRight = "Latched" if self.latched else f"{self.offset}/{len(self.lines)}"
 
 			space_count = max(0, self.width - len(statusLeft) - len(statusRight))
