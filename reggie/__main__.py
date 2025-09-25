@@ -1,4 +1,4 @@
-import shutil, os, time, threading, readchar, sys
+import shutil, os, time, threading, readchar, sys, string
 
 class Reggie:
 	def __init__(self):
@@ -21,6 +21,9 @@ class Reggie:
 
 	def draw(self): # Render the lines.
 		while True:
+			self.width = shutil.get_terminal_size()[0]
+			self.height = shutil.get_terminal_size()[1] - 2
+			
 			sys.stdout.write("\033[H\033[J")
 
 			if self.latched:
@@ -73,11 +76,11 @@ class Reggie:
 				
 				elif key == readchar.key.ENTER:
 					if self.msg != "":
-						self.lines.append(self.msg)
+						self.lines.append("<bash> " + self.msg)
 						self.msg = ""
 
 				# If all else fails, this is probably a message...
-				elif str(key).isascii():
+				elif len(key) == 1 and (key in string.printable and (key not in string.whitespace or key == " ")) and key not in "\x0b\x0c":
 					self.msg += key
 			except AttributeError:
 				pass
