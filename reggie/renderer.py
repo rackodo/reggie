@@ -72,10 +72,11 @@ class Renderer:
 		sys.stdout.write("-" * self.width)
 
 		# Draw Status bar
-		self.statusContentLeft = f"<{os.getlogin()}> {self.msg}_"
+		self.statusContentLeft = f"<{os.getlogin()}> {self.msg}"
 		self.statusContentRight = "Latched" if self.latched else f"{self.scrollPosition}/{len(self.history)}"
 
 		spaceCount = max(0, self.width - len(self.statusContentLeft) - len(self.statusContentRight))
 		sys.stdout.write(self.statusContentLeft + (" " * spaceCount) + self.statusContentRight)
+		sys.stdout.write(f"\033[{self.height};{len(self.statusContentLeft) + 1}H")
 
 		sys.stdout.flush()
