@@ -9,16 +9,8 @@ def main():
 	ren.AddText(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'splash.txt'),'rb').readlines())
 
 	inp = Input()
-
-	clock = Clock()
-
-	clock.attach(ren)
+	
 	inp.attach(ren)
-
-	clockThread = threading.Thread(
-		target=clock.Tick
-	)
-	clockThread.start()
 
 	inputThread = threading.Thread(
 		target=inp.Watch

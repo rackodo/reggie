@@ -1,4 +1,4 @@
-import shutil, sys, readchar, string, os
+import shutil, sys, readchar, string, os, threading
 
 class Renderer:
 	def __init__(self):
@@ -8,13 +8,23 @@ class Renderer:
 		self.latched = True
 		self.fps = 30
 
-		self.msg = ""
-
 		self.statusContentLeft = ""
 		self.statusContentRight = ""
 
-	def onTick(self):
-		self.Draw()
+		self.msg = ""
+
+		sizeThread = threading.Thread(
+			target=self.adjustSize
+		)
+		sizeThread.start()
+
+	def adjustSize(self):
+		while True:
+			newWidth, newHeight = shutil.get_terminal_size()
+			if (self.width, self.height) != (newWidth, newHeight):
+				self.width, self.height = newWidth, newHeight
+				self.DrawFeed()
+				self.DrawStatusBar()
 
 	def onKeyPress(self, key):
 		# Arrow Key Navigation
@@ -24,37 +34,50 @@ class Renderer:
 				self.latched = False
 			if self.scrollPosition < 0:
 				self.scrollPosition = 0
+			self.DrawFeed()
 		elif key == readchar.key.DOWN:
 			if self.latched:
 				pass
 			else:
 				self.scrollPosition += 1
-				if self.scrollPosition > len(self.history) - (self.height - 2):
-					self.scrollPosition = len(self.history) - self.height
+				if self.scrollPosition > len(self.history) - (self.height - 1):
+					self.scrollPosition = len(self.history) - self.height - 1
 					if self.scrollPosition < 0:
 						self.scrollPosition = 0
 					self.latched = True
+			self.DrawFeed()
 
 		elif key == readchar.key.BACKSPACE:
 			self.msg = self.msg[:-1]
 		
 		elif key == readchar.key.ENTER:
 			if self.msg != "":
-				self.history.append(f"<{os.getlogin()}> {self.msg}")
+				self.AddText(f"<{os.getlogin()}> {self.msg}")
 				self.msg = ""
 
 		# If all else fails, this is probably a message...
 		elif len(key) == 1 and (key in string.printable and (key not in string.whitespace or key == " ")) and key not in "\x0b\x0c":
 			self.msg += key
+		
+		self.DrawStatusBar()
+
+	def onFeedUpdated(self):
+		self.DrawFeed()
 
 	def AddText(self, text):
-		self.history += [line.decode('unicode-escape').strip('\n') for line in text]
+		try:
+			self.history += [line.decode('unicode-escape').strip('\n') for line in text]
+		except AttributeError:
+			if type(text) == str:
+				self.history.append(text)
+			if type(text) == list:
+				self.history += [line for line in text]
+		
+		self.onFeedUpdated()
 
-	def Draw(self):
-		self.width, self.height = shutil.get_terminal_size()
-
+	def DrawFeed(self):
 		if self.latched:
-			self.scrollPosition = len(self.history) - (self.height - 2)
+			self.scrollPosition = len(self.history) - (self.height - 1)
 		if self.scrollPosition < 0:
 			self.scrollPosition = 0
 
@@ -62,13 +85,18 @@ class Renderer:
 		sys.stdout.write("\033[H\033[J")
 
 		# Loop over lines in the history, from the scroll position to that plus the height of the console... minus 2, to make room for the status bar
-		for i in range(0, self.height - 2):
+		for i in range(0, self.height):
 			try:
-				print(self.history[i + self.scrollPosition])
+				sys.stdout.write(f"\033[{i + 1};0H")
+				sys.stdout.write(f"{self.history[i + self.scrollPosition]}\n")
 			except IndexError:
-				sys.stdout.write("\n")
+				pass
+		
+		self.DrawStatusBar()
 
+	def DrawStatusBar(self):
 		# Draw Spacer
+		sys.stdout.write(f"\033[{self.height - 1};0H")
 		sys.stdout.write("-" * self.width)
 
 		# Draw Status bar
@@ -76,6 +104,8 @@ class Renderer:
 		self.statusContentRight = "Latched" if self.latched else f"{self.scrollPosition}/{len(self.history)}"
 
 		spaceCount = max(0, self.width - len(self.statusContentLeft) - len(self.statusContentRight))
+
+		sys.stdout.write(f"\033[{self.height};0H")
 		sys.stdout.write(self.statusContentLeft + (" " * spaceCount) + self.statusContentRight)
 		sys.stdout.write(f"\033[{self.height};{len(self.statusContentLeft) + 1}H")
 
