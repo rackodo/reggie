@@ -1,4 +1,4 @@
-import shutil, sys, readchar, string, os, threading
+import shutil, sys, readchar, string, os, threading, textwrap
 
 class Renderer:
 	def __init__(self):
@@ -80,16 +80,21 @@ class Renderer:
 		self.onFeedUpdated()
 
 	def DrawFeed(self):
+		prettyHistory = []
+
+		for line in self.history:
+			prettyHistory += [line[i:i+self.width] for i in range(0, len(line), self.width)]
+
 		if self.latched:
-			self.scrollPosition = len(self.history) - (self.height - 2)
+			self.scrollPosition = len(prettyHistory) - (self.height - 2)
 		if self.scrollPosition < 0:
 			self.scrollPosition = 0
 
 		# Loop over lines in the history, from the scroll position to that plus the height of the console... minus 2, to make room for the status bar
-		for i in range(0, self.height):
+		for i in range(0, self.height - 2):
 			try:
 				sys.stdout.write(f"\033[{i + 1};0H")
-				sys.stdout.write(f"{self.history[i + self.scrollPosition]}".ljust(self.width))
+				sys.stdout.write(f"{prettyHistory[i + self.scrollPosition]}".ljust(self.width))
 			except IndexError:
 				sys.stdout.write(f" " * self.width)
 		

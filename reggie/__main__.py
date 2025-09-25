@@ -1,7 +1,6 @@
-from reggie.clock import Clock
 from reggie.renderer import Renderer
 from reggie.input import Input
-import sys, threading, os, time
+import sys, threading, os
 
 def main():
 	ren = Renderer()
