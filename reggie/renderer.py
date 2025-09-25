@@ -13,6 +13,9 @@ class Renderer:
 
 		self.msg = ""
 
+		# Clear Console
+		sys.stdout.write("\033[H\033[J")
+
 		sizeThread = threading.Thread(
 			target=self.adjustSize
 		)
@@ -34,6 +37,7 @@ class Renderer:
 				self.latched = False
 			if self.scrollPosition < 0:
 				self.scrollPosition = 0
+				pass
 			self.DrawFeed()
 		elif key == readchar.key.DOWN:
 			if self.latched:
@@ -77,20 +81,17 @@ class Renderer:
 
 	def DrawFeed(self):
 		if self.latched:
-			self.scrollPosition = len(self.history) - (self.height - 1)
+			self.scrollPosition = len(self.history) - (self.height - 2)
 		if self.scrollPosition < 0:
 			self.scrollPosition = 0
-
-		# Clear Console
-		sys.stdout.write("\033[H\033[J")
 
 		# Loop over lines in the history, from the scroll position to that plus the height of the console... minus 2, to make room for the status bar
 		for i in range(0, self.height):
 			try:
 				sys.stdout.write(f"\033[{i + 1};0H")
-				sys.stdout.write(f"{self.history[i + self.scrollPosition]}\n")
+				sys.stdout.write(f"{self.history[i + self.scrollPosition]}".ljust(self.width))
 			except IndexError:
-				pass
+				sys.stdout.write(f" " * self.width)
 		
 		self.DrawStatusBar()
 
