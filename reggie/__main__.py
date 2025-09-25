@@ -72,11 +72,12 @@ class Reggie:
 					self.msg = self.msg[:-1]
 				
 				elif key == readchar.key.ENTER:
-					self.lines.append(self.msg)
-					self.msg = ""
+					if self.msg != "":
+						self.lines.append(self.msg)
+						self.msg = ""
 
 				# If all else fails, this is probably a message...
-				else:
+				elif str(key).isascii():
 					self.msg += key
 			except AttributeError:
 				pass
