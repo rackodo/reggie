@@ -23,7 +23,7 @@ class Reggie:
 		while True:
 			self.width = shutil.get_terminal_size()[0]
 			self.height = shutil.get_terminal_size()[1] - 2
-			
+
 			sys.stdout.write("\033[H\033[J")
 
 			if self.latched:
@@ -38,7 +38,7 @@ class Reggie:
 					sys.stdout.write("\n")
 			sys.stdout.write("-" * self.width)
 
-			statusLeft = self.msg
+			statusLeft = f"<{os.getlogin()}> {self.msg}"
 			statusRight = "Latched" if self.latched else f"{self.offset}/{len(self.lines)}"
 
 			space_count = max(0, self.width - len(statusLeft) - len(statusRight))
@@ -76,7 +76,7 @@ class Reggie:
 				
 				elif key == readchar.key.ENTER:
 					if self.msg != "":
-						self.lines.append("<bash> " + self.msg)
+						self.lines.append(f"<{os.getlogin()}> {self.msg}")
 						self.msg = ""
 
 				# If all else fails, this is probably a message...
