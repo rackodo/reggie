@@ -1,15 +1,18 @@
 from reggie.renderer import Renderer
 from reggie.input import Input
+from reggie.client import Client
 import sys, threading, os
 
 def main():
 	ren = Renderer()
 
-	ren.AddText(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'splash.txt'),'rb').readlines())
-
 	inp = Input()
-	
 	inp.attach(ren)
+
+	cli = Client('irc.libera.chat', 6667, 'reggieIrcTest')
+	cli.attach(ren)
+
+	inp.attach(cli)
 
 	inputThread = threading.Thread(
 		target=inp.Watch
