@@ -25,6 +25,8 @@ class Renderer:
 		self.latched = True
 		self.fps = 30
 
+		self.nick = "none"
+
 		self.statusContentLeft = ""
 		self.statusContentRight = ""
 
@@ -92,17 +94,10 @@ class Renderer:
 		self.prettyHistory = []
 
 		for line in self.history:
-			line = line.lstrip(":")
-			pLines = line.split(":")
-			try:
-				l = "".join(pLines[x] for x in range(1, len(pLines)))
-				self.prettyHistory.extend(wrap_line(l, self.width - 1))
-				self.prettyHistory.append("\n")
-			except IndexError:
-				self.prettyHistory.extend(wrap_line(line, self.width - 1))
+			self.prettyHistory.extend(wrap_line(line, self.width - 1))
 
 		if self.latched:
-			self.scrollPosition = len(self.prettyHistory) - (self.height - 2)
+			self.scrollPosition = len(self.prettyHistory) - (self.height - 1)
 		if self.scrollPosition < 0:
 			self.scrollPosition = 0
 
@@ -128,7 +123,7 @@ class Renderer:
 		buffer.append("-" * self.width)
 
 		# Draw Status bar
-		self.statusContentLeft = f"<{os.getlogin()}>"
+		self.statusContentLeft = f"<{self.nick}>"
 		self.statusContentRight = "Latched" if self.latched else f"{self.scrollPosition}/{len(self.prettyHistory)}"
 
 		spaceCount = max(0, self.width - len(self.statusContentLeft) - len(self.statusContentRight))

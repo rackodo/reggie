@@ -16,7 +16,6 @@ def main():
 	)
 	inputThread.start()
 
-	fps = 20
 	while True:
 		try:
 			while True:
@@ -26,10 +25,11 @@ def main():
 					cli.onKeyPress(data)
 				elif event_type == "message":
 					ren.onClientReceive(data)
+					pass
+				elif event_type == "nick":
+					ren.nick = data
 		except queue.Empty:
 			pass
-
-		time.sleep(1/fps)
 
 if __name__ == '__main__':
 	sys.exit(main())

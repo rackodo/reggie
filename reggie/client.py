@@ -1,4 +1,4 @@
-import socket, sys, threading, readchar, string
+import socket, sys, threading, readchar, string, irctokens
 
 class Client:
 	def __init__(self, queue, address, port, nick):
@@ -7,12 +7,11 @@ class Client:
 		self.address = address
 		self.port = port
 		self.nick = nick
-		self.channel = "#rudechat"
+		self.channel = "##reggie"
 
 		# Lifted from https://github.com/bl4de/irc-client/blob/master/irc_client_py3.py
 		self.cmd = ""
-		self.joined = False
-		self.quitting = False
+		self.buffer = ""
 		
 		clientThread = threading.Thread(target=self.Begin)
 		clientThread.start()
@@ -20,30 +19,7 @@ class Client:
 	def Begin(self):
 		self.connect()
 
-		while (self.joined == False):
-			resp = self.get_response()
-			self.queue.put(("message", resp.strip('\n')))
-			if "No Ident response" in resp:
-				self.updateNick()
-				
-			# we're accepted, let's join the channel
-			if "376" in resp:
-				self.join_channel()
-			
-			# username already in use? change with _ at the start
-			if "433" in resp:
-				self.nick = "_" + self.nick
-				self.updateNick()
-			
-			# ping and pong
-			if "PING" in resp:
-				self.send_cmd("PONG", ":" + resp.split(":")[1])
-
-			# we've joined
-			if "366" in resp:
-				self.joined = True
-
-		respThread = threading.Thread(target=self.print_response)
+		respThread = threading.Thread(target=self.serverMessageDaemon)
 		respThread.start()
 
 	# KeyPress Observer
@@ -70,14 +46,40 @@ class Client:
 	def updateNick(self):
 		self.send_cmd("NICK", self.nick)
 		self.send_cmd("USER", "{} * * :{}".format(self.nick, self.nick))
+		self.queue.put(("nick", self.nick))
+
+	def serverMessageHandler(self, message):
+		tokens = irctokens.tokenise(message.strip())
+
+		if "*** No Ident response" in tokens.params:
+			self.updateNick()
+			
+		# we're accepted, let's join the channel
+		if tokens.command == "376":
+			self.join_channel()
+		
+		# username already in use? change with _ at the start
+		if tokens.command == "433":
+			self.nick = "_" + self.nick
+			self.updateNick()
+		
+		# ping and pong
+		if tokens.command == "PING":
+			self.send_cmd("PONG", ":" + message.split(":")[1])
+
+		self.queue.put(("message", message.strip()))
 
 	# Response Daemon
-	def print_response(self):
+	def serverMessageDaemon(self):
 		while True:
 			resp = self.get_response()
-			if resp:
-				msg = resp.strip().split(":")
-				self.queue.put(("message", "<{}> {}".format(msg[1].split("!")[0], msg[2].strip())))
+			if not resp:
+				break
+			self.buffer += resp.decode('utf-8')
+
+			while '\r\n' in self.buffer:
+				line, self.buffer = self.buffer.split('\r\n', 1)
+				self.serverMessageHandler(line)
 
 	# Client Code
 	def connect(self):
@@ -85,7 +87,7 @@ class Client:
 		self.conn.connect((self.address, self.port))
 
 	def get_response(self):
-		return self.conn.recv(512).decode("utf-8")
+		return self.conn.recv(4096)
 	
 	def send_cmd(self, cmd, message):
 		command = "{} {}\r\n".format(cmd, message).encode("utf-8")
@@ -95,7 +97,7 @@ class Client:
 		command = "PRIVMSG {}".format(self.channel)
 		msg = ":" + list(message)[0]
 		self.send_cmd(command, msg)
-		self.queue.put(("message", "<{}> {}".format(self.nick, msg)))
+		# self.queue.put(("message", "<{}> {}".format(self.nick, msg)))
 
 	def join_channel(self):
 		cmd = "JOIN"
